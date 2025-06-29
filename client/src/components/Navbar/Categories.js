@@ -11,7 +11,8 @@ function Categories() {
     'Personal Care',
     'Vegetables',
     'Fruits',
-    'Dairy'
+    'Dairy',
+    'Pickles'
   ];
 
   const handleCategoryClick = (category) => {

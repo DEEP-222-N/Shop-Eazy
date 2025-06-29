@@ -1,10 +1,12 @@
 import React from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { useCart } from "../../context/CartContext";
 import Categories from "./Categories";
 import "./Navbar.css";
 
 function Navbar({ token, setToken }) {
   const navigate = useNavigate();
+  const { cartCount } = useCart();
 
   const logout = () => {
     localStorage.removeItem("token");
@@ -20,7 +22,12 @@ function Navbar({ token, setToken }) {
       <div className="navbar-links">
         <Link to="/">Home</Link>
         <Link to="/products">Products</Link>
-        <Link to="/cart">Cart</Link>
+        <Link to="/cart" className="cart-link">
+          Cart
+          {cartCount > 0 && (
+            <span className="cart-count">{cartCount}</span>
+          )}
+        </Link>
         <Categories />
       </div>
       <div className="navbar-auth">

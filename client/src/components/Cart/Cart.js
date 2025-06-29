@@ -1,99 +1,30 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import { useCart } from '../../context/CartContext';
 import './Cart.css';
 
 function Cart() {
   const navigate = useNavigate();
-  const [cart, setCart] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-
-  const fetchCart = async () => {
-    try {
-      const token = localStorage.getItem('token');
-      if (!token) {
-        navigate('/login');
-        return;
-      }
-
-      const response = await axios.get('http://localhost:5000/api/cart', {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      
-      // Validate cart data
-      const cartData = response.data;
-      if (!cartData || typeof cartData !== 'object') {
-        throw new Error('Invalid cart data received');
-      }
-
-      // Ensure items is an array
-      cartData.items = Array.isArray(cartData.items) ? cartData.items : [];
-      
-      // Filter out invalid items and normalize data
-      cartData.items = cartData.items.filter(item => {
-        return item && 
-               item.productId && 
-               typeof item.productId === 'object' && 
-               item.quantity && 
-               typeof item.quantity === 'number';
-      }).map(item => ({
-        ...item,
-        productId: {
-          ...item.productId,
-          price: Number(item.productId.price) || 0,
-          name: item.productId.name || 'Unknown Product',
-          image: item.productId.image || null
-        }
-      }));
-
-      setCart(cartData);
-      setError(null);
-    } catch (error) {
-      console.error('Error fetching cart:', error);
-      setError(error.message);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const { cartItems, loading, error, updateQuantity, removeFromCart, fetchCart } = useCart();
 
   useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      navigate('/login');
+      return;
+    }
     fetchCart();
-  }, []);
-
-  const updateQuantity = async (productId, newQuantity) => {
-    if (newQuantity < 1) return;
-    try {
-      const token = localStorage.getItem('token');
-      await axios.post('http://localhost:5000/api/cart/add', 
-        { productId, quantity: newQuantity },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      fetchCart(); // Refresh cart after update
-    } catch (error) {
-      console.error('Error updating quantity:', error);
-      alert('Failed to update quantity');
-    }
-  };
-
-  const removeFromCart = async (productId) => {
-    try {
-      const token = localStorage.getItem('token');
-      await axios.post('http://localhost:5000/api/cart/remove',
-        { productId },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      fetchCart(); // Refresh cart after removal
-    } catch (error) {
-      console.error('Error removing item:', error);
-      alert('Failed to remove item');
-    }
-  };
+  }, [fetchCart, navigate]);
 
   if (loading) return <div className="cart-container">Loading...</div>;
   if (error) return <div className="cart-container">Error: {error}</div>;
 
-  if (!cart || !cart.items || cart.items.length === 0) {
+  // Filter out invalid cart items (items with null/undefined productId)
+  const validCartItems = cartItems.filter(item => 
+    item && item.productId && typeof item.productId === 'object'
+  );
+
+  if (!validCartItems || validCartItems.length === 0) {
     return (
       <div className="cart-container">
         <h2>Your Shopping Cart</h2>
@@ -105,24 +36,40 @@ function Cart() {
     );
   }
 
-  const total = cart.items.reduce((sum, item) => 
-    sum + (item.productId.price * item.quantity), 0
+  const total = validCartItems.reduce((sum, item) => 
+    sum + ((item.productId?.price || 0) * (item.quantity || 0)), 0
   );
 
   const handleCheckout = () => {
     navigate('/checkout', {
       state: {
         total: total,
-        items: cart.items
+        items: validCartItems
       }
     });
+  };
+
+  const handleUpdateQuantity = async (productId, newQuantity) => {
+    try {
+      await updateQuantity(productId, newQuantity);
+    } catch (error) {
+      alert('Failed to update quantity');
+    }
+  };
+
+  const handleRemoveFromCart = async (productId) => {
+    try {
+      await removeFromCart(productId);
+    } catch (error) {
+      alert('Failed to remove item');
+    }
   };
 
   return (
     <div className="cart-container">
       <div className="cart-items">
         <h2>Your Shopping Cart</h2>
-        {cart.items.map(item => (
+        {validCartItems.map(item => (
           <div key={item.productId._id} className="cart-item">
             <img 
               src={item.productId.image
@@ -144,14 +91,14 @@ function Cart() {
               <div className="quantity-controls">
                 <button 
                   className="quantity-btn"
-                  onClick={() => updateQuantity(item.productId._id, item.quantity - 1)}
+                  onClick={() => handleUpdateQuantity(item.productId._id, item.quantity - 1)}
                 >
                   -
                 </button>
                 <span className="quantity">{item.quantity}</span>
                 <button 
                   className="quantity-btn"
-                  onClick={() => updateQuantity(item.productId._id, item.quantity + 1)}
+                  onClick={() => handleUpdateQuantity(item.productId._id, item.quantity + 1)}
                 >
                   +
                 </button>
@@ -160,10 +107,10 @@ function Cart() {
             <div className="item-total">
               <p>Total</p>
               <p className="total-price">
-                ₹{item.productId.price * item.quantity}
+                ₹{(item.productId?.price || 0) * (item.quantity || 0)}
               </p>
             </div>
-            <button onClick={() => removeFromCart(item.productId._id)} className="remove-btn">
+            <button onClick={() => handleRemoveFromCart(item.productId._id)} className="remove-btn">
               Remove
             </button>
           </div>
@@ -174,7 +121,7 @@ function Cart() {
           <h3>Order Summary</h3>
           <div className="price-details">
             <div className="price-row">
-              <span>Items ({cart.items.length})</span>
+              <span>Items ({validCartItems.length})</span>
               <span>₹{total}</span>
             </div>
             <div className="price-row">
@@ -209,18 +156,23 @@ function Cart() {
         <div className="recently-viewed">
           <h3>Recently Viewed</h3>
           <div className="recently-viewed-items">
-            {cart.items.slice(0, 4).map(item => (
+            {validCartItems.slice(0, 4).map(item => (
               <div key={`recent-${item.productId._id}`} className="recently-viewed-item" onClick={() => navigate(`/product/${item.productId._id}`)}>
                 <img 
-                  src={item.productId.image.startsWith('http') ? item.productId.image : `http://localhost:5000/${item.productId.image}`}
-                  alt={item.productId.name}
+                  src={item.productId.image
+                    ? (item.productId.image.startsWith('http')
+                      ? item.productId.image
+                      : `http://localhost:5000/${item.productId.image}`)
+                    : 'https://via.placeholder.com/100x100?text=Product'
+                  }
+                  alt={item.productId.name || 'Product'}
                   onError={(e) => {
                     e.target.onerror = null;
                     e.target.src = 'https://via.placeholder.com/100x100?text=Product';
                   }}
                 />
-                <h4>{item.productId.name}</h4>
-                <p>₹{item.productId.price}</p>
+                <h4>{item.productId.name || 'Product'}</h4>
+                <p>₹{item.productId.price || 0}</p>
               </div>
             ))}
           </div>

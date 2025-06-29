@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
+import { useCart } from '../../context/CartContext';
 import axios from 'axios';
 import './ProductDetail.css';
 
@@ -8,6 +9,7 @@ function ProductDetail() {
   const [loading, setLoading] = useState(true);
   const [quantity, setQuantity] = useState(1);
   const { id } = useParams();
+  const { addToCart } = useCart();
 
   useEffect(() => {
     const fetchProduct = async () => {
@@ -31,11 +33,7 @@ function ProductDetail() {
         return;
       }
 
-      await axios.post("http://localhost:5000/api/cart/add", 
-        { productId: product._id, quantity },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-
+      await addToCart(product._id, quantity);
       alert("Product added to cart!");
     } catch (error) {
       console.error("Error adding to cart:", error);

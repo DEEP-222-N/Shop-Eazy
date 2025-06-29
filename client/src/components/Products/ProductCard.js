@@ -73,6 +73,11 @@ function ProductCard({ product }) {
         storage: 'Store in refrigerator for longer shelf life',
         origin: 'Freshly sourced from local farms'
       },
+      'Snacks': {
+        benefits: ['Quick and tasty energy boost', 'Perfect for parties and gatherings', 'Wide variety of flavors', 'Convenient and ready to eat'],
+        storage: 'Store in a cool, dry place. Seal the pack after opening to retain freshness.',
+        origin: 'Sourced from top snack brands and local favorites'
+      },
       'Pickles': {
         benefits: ['Traditional Indian recipe', 'Aids in digestion', 'Rich in probiotics', 'Enhances meal taste'],
         storage: 'Store in cool, dry place. Refrigerate after opening',

@@ -240,30 +240,6 @@ function Checkout() {
           {error && <div className="error-message">{error}</div>}
           <div className="payment-options">
             <button 
-              onClick={() => handlePaymentSubmit('card')} 
-              className="payment-option"
-              disabled={loading}
-            >
-              <i className="fas fa-credit-card"></i>
-              <span>Credit/Debit Card</span>
-            </button>
-            <button 
-              onClick={() => handlePaymentSubmit('upi')} 
-              className="payment-option"
-              disabled={loading}
-            >
-              <i className="fas fa-mobile-alt"></i>
-              <span>UPI Payment</span>
-            </button>
-            <button 
-              onClick={() => handlePaymentSubmit('banking')} 
-              className="payment-option"
-              disabled={loading}
-            >
-              <i className="fas fa-university"></i>
-              <span>Net Banking</span>
-            </button>
-            <button 
               onClick={() => handlePaymentSubmit('cod')} 
               className="payment-option"
               disabled={loading}

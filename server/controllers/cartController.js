@@ -7,6 +7,9 @@ exports.addToCart = async (req, res) => {
     
     if (!cart) {
       cart = new Cart({ userId: req.user.id, items: [] });
+    } else {
+      // Clean up existing cart items that are invalid
+      cart.items = cart.items.filter(item => item.productId);
     }
 
     const itemIndex = cart.items.findIndex(item => item.productId.toString() === productId);
@@ -37,7 +40,12 @@ exports.removeFromCart = async (req, res) => {
       return res.status(404).json({ message: 'Cart not found' });
     }
 
-    cart.items = cart.items.filter(item => item.productId.toString() !== productId);
+    // First, clean up any corrupted items
+    const validItems = cart.items.filter(item => item.productId);
+    
+    // Then, remove the requested item from the valid items
+    cart.items = validItems.filter(item => item.productId.toString() !== productId);
+
     await cart.save();
     await cart.populate('items.productId');
     res.json(cart);
